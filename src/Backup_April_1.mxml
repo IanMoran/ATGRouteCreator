@@ -1,0 +1,208 @@
+<?xml version="1.0"?>
+<mx:WindowedApplication 
+    xmlns:mx="http://www.adobe.com/2006/mxml" 
+    layout="vertical"
+	creationComplete="max()">
+
+    <mx:Script>
+        <![CDATA[
+			import flash.display.Sprite;
+			import flash.events.Event;
+			import flash.text.TextField;
+			import flash.html.HTMLLoader;
+			import flash.net.URLRequest;
+			import mx.controls.AdvancedDataGrid;
+			import mx.controls.advancedDataGridClasses.AdvancedDataGridColumn;
+			import mx.collections.ArrayCollection;
+			import flash.utils.*;
+			import mx.controls.HTML;
+			import flash.filesystem.*;
+			
+			private var waypoints:Array = new Array();
+			private var html:HTMLLoader = new HTMLLoader();
+			private var activeMap:Object;
+			
+			private function max():void {
+				this.nativeWindow.maximize();
+				var test:uint = setInterval(showMessage, 1000);
+				function showMessage():void{
+				trace("hello");
+				clearInterval(test);
+				init();
+				}
+			}
+			
+            private function init():void
+            {
+				html.width = container.width;
+				html.height = container.height;
+				html.addEventListener(Event.COMPLETE, loaded);
+				html.placeLoadStringContentInApplicationSandbox = false;
+				var urlReq:URLRequest = new URLRequest("file:///C:/Users/owner/Google%20Drive/Personal%20Project%20Logs%20Spring%202013/Map/Javascript.html");
+				html.window.sendMap = sendMap;
+				html.load(urlReq); 
+				container.addChild(html);
+			
+				function loaded(e:Event):void { 
+					//Insert Javascript -> AS3 function calls here
+					//Format: html.window.funcName = funcName;
+
+					
+					html.window.google.maps.event.addListener(activeMap, 'dblclick', function(event) {
+						var marker = new html.window.google.maps.Marker({
+						position: event.latLng,
+						map: activeMap,
+						title: "Test",
+						draggable: true
+					});
+					var error = new html.window.google.maps.Circle({
+						strokeColor: '#FF0000',
+						strokeOpacity: 0.8,
+						strokeWeight: 2,
+						fillColor: '#FF0000',
+						fillOpacity: 0.35,
+						center: marker.getPosition(),
+						radius: 15,
+						map: activeMap,
+						clickable: false
+						});
+					html.window.google.maps.event.addListener(marker, "drag", function() {
+						error.setCenter(marker.getPosition());});
+					html.window.google.maps.event.addListener(marker, "dblclick", function() {
+						removeMarker(marker); 
+						});
+					sendMarker(marker, error);
+				});
+				}
+			}//init
+			
+				private function sendMarker(marker:Object, circle:Object):void {
+					var point:Waypoint = new Waypoint(marker, circle);
+					trace(point.marker.getTitle());
+					waypoints.push(point);
+					waypoints[waypoints.length - 1].marker.setTitle(waypoints.length.toString());
+					waypointData.addItem( { Number:marker.getTitle(), Error:circle.getRadius(), Audio:"" } );
+					trace (marker.getTitle());
+				}
+			
+				private function removeMarker(remMarker:Object):void {
+					for (var i:int = 0; i < waypoints.length; i++) {
+						trace("Testing marker: ", i);
+						if (waypoints[i].marker == remMarker) {
+							waypoints[i].marker.setMap(null);
+							waypoints[i].circle.setMap(null);
+							waypoints.splice(i, 1);
+							break;
+						}
+					}
+					
+					waypointData.removeAll();
+				
+					for (i = 0; i < waypoints.length; i++) {
+						waypoints[i].marker.setTitle((i + 1).toString());
+						waypointData.addItem( { Number:waypoints[i].marker.getTitle(), Error:waypoints[i].circle.getRadius(), Audio:"" } );
+					}
+				}
+				
+				private function sendMap(map:Object):void {
+					activeMap = map;
+				}
+				
+				
+			
+			private function buttonTest1():void {
+				var file:File = File.documentsDirectory;
+				file = file.resolvePath("Test.wp");
+				var filestream:FileStream = new FileStream();
+				filestream.open(file, FileMode.WRITE);
+				
+				var curLat:Number;
+				var curLng:Number;
+				for (var i = 0; i < waypoints.length; i++)
+				{
+					curLat = waypoints[i].marker.getPosition().lat();
+					curLng = waypoints[i].marker.getPosition().lng();
+					filestream.writeDouble(curLat);
+					filestream.writeDouble(curLng);
+				}
+				filestream.close();
+				var file2:File = File.documentsDirectory;
+				file2 = file2.resolvePath("Test.txt");
+				filestream.open(file2, FileMode.WRITE);
+				filestream.writeUTFBytes("Test");
+				filestream.close();
+			}
+			private function buttonTest2():void {
+				var file:File = File.documentsDirectory;
+				file = file.resolvePath("Test.wp");
+				var filestream:FileStream = new FileStream();
+				filestream.open(file, FileMode.READ);
+				
+				var curLat:Number;
+				var curLng:Number;
+				
+				while (filestream.bytesAvailable > 0) {
+					curLat = filestream.readDouble();
+					curLng = filestream.readDouble();
+					
+					var latlng:Object = new html.window.google.maps.LatLng(curLat, curLng);
+					
+					var marker = new html.window.google.maps.Marker({
+						position: latlng,
+						map: activeMap,
+						title: "Test",
+						draggable: true
+					});
+					var error = new html.window.google.maps.Circle({
+						strokeColor: '#FF0000',
+						strokeOpacity: 0.8,
+						strokeWeight: 2,
+						fillColor: '#FF0000',
+						fillOpacity: 0.35,
+						center: marker.getPosition(),
+						radius: 15,
+						map: activeMap,
+						clickable: false
+						});
+					html.window.google.maps.event.addListener(marker, "drag", function() {
+						error.setCenter(marker.getPosition());});
+					html.window.google.maps.event.addListener(marker, "dblclick", function() {
+						removeMarker(marker); 
+						});
+						sendMarker(marker, error);
+				}
+			}
+				[Bindable]
+				private var waypointData:ArrayCollection = new ArrayCollection([]);
+			
+        ]]>
+    </mx:Script>
+	
+	<mx:Panel id = "panel"
+        height="100%" width="100%" layout="horizontal">
+		
+		<mx:UIComponent id="container" width="100%" height="100%"/>
+		
+		<mx:Panel title="Options"
+		height="100%" layout="vertical" verticalAlign="middle" horizontalAlign="center" verticalGap="10">
+			<mx:Button label="Save Test" click="buttonTest1()"></mx:Button>
+			<mx:Button label="Load Test" click="buttonTest2()"></mx:Button>
+		</mx:Panel>
+
+        <mx:AdvancedDataGrid id="myADG"
+            width="100%" height="100%" 
+            initialize="gc.refresh();">        
+            <mx:dataProvider>
+                <mx:GroupingCollection2 id="gc" source="{waypointData}">
+                </mx:GroupingCollection2>
+            </mx:dataProvider>        
+            
+            <mx:columns>
+                <mx:AdvancedDataGridColumn dataField="Number"/>
+                <mx:AdvancedDataGridColumn dataField="Error"/>
+                <mx:AdvancedDataGridColumn dataField="Audio"/>
+            </mx:columns>
+       </mx:AdvancedDataGrid>
+    </mx:Panel>
+    
+</mx:WindowedApplication>

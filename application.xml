@@ -1,0 +1,21 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<application xmlns="http://ns.adobe.com/air/application/3.5">
+  <id>ATGRouteCreator</id>
+  <versionNumber>0.2</versionNumber>
+  <filename>ATG Route Creator</filename>
+  <name>ATG Route Creator</name>
+  <initialWindow>
+    <title>ATG Route Creator</title>
+    <content>ATGRouteCreator.swf</content>
+    <systemChrome>standard</systemChrome>
+    <transparent>false</transparent>
+    <visible>true</visible>
+    <minimizable>true</minimizable>
+    <maximizable>true</maximizable>
+    <resizable>true</resizable>
+  </initialWindow>
+  <!-- 
+	More options:
+	http://livedocs.adobe.com/flex/3/html/File_formats_1.html#1043413
+	-->
+</application>

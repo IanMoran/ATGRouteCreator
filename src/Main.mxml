@@ -1,0 +1,496 @@
+﻿<?xml version="1.0"?>
+<mx:WindowedApplication 
+    xmlns:mx="http://www.adobe.com/2006/mxml" 
+    layout="vertical"
+	creationComplete="max()">
+
+    <mx:Script>
+        <![CDATA[
+			import flash.display.Sprite;
+			import flash.events.Event;
+			import flash.net.FileFilter;
+			import flash.net.FileReference;
+			import flash.text.TextField;
+			import flash.html.HTMLLoader;
+			import flash.net.URLRequest;
+			import mx.controls.AdvancedDataGrid;
+			import mx.controls.advancedDataGridClasses.AdvancedDataGridColumn;
+			import mx.controls.Alert;
+			import mx.collections.ArrayCollection;
+			import mx.events.*;
+			import flash.utils.*;
+			import mx.controls.HTML;
+			import flash.filesystem.*;
+			
+			private var waypoints:Array = new Array();
+			private var html:HTMLLoader = new HTMLLoader();
+			private var activeMap:Object;
+			private var sdCardRoot:File;
+			private var rNum:int = 0;
+			
+			private function max():void {
+				this.nativeWindow.maximize();
+				var test:uint = setInterval(showMessage, 1000);
+				function showMessage():void{
+				trace("hello");
+				clearInterval(test);
+				init();
+				}
+			}
+			
+            private function init():void
+            {
+				html.width = container.width;
+				html.height = container.height;
+				html.addEventListener(Event.COMPLETE, loaded);
+				html.placeLoadStringContentInApplicationSandbox = false;
+				var htmlURL:File = File.applicationDirectory.resolvePath("ATGJavascript.html");
+				var urlReq:URLRequest = new URLRequest(htmlURL.nativePath);
+				html.window.sendMap = sendMap;
+				html.load(urlReq); 
+				container.addChild(html);
+				
+				myADG.addEventListener(ListEvent.ITEM_CLICK, centerMap);
+			
+				function loaded(e:Event):void { 
+					html.window.google.maps.event.addListener(activeMap, 'dblclick', function(event) {
+						var marker = new html.window.google.maps.Marker({
+						position: event.latLng,
+						map: activeMap,
+						title: "Unlabled Waypoint",
+						draggable: true
+					});
+					var prox = new html.window.google.maps.Circle({
+						strokeColor: '#FF0000',
+						strokeOpacity: 0.8,
+						strokeWeight: 2,
+						fillColor: '#FF0000',
+						fillOpacity: 0.35,
+						center: marker.getPosition(),
+						radius: 10,
+						map: activeMap,
+						clickable: false
+						});
+					html.window.google.maps.event.addListener(marker, "drag", function() {
+						prox.setCenter(marker.getPosition());});
+					html.window.google.maps.event.addListener(marker, "dblclick", function() {
+						removeMarker(marker); 
+						});
+					sendMarker(marker, prox, "No File");
+				});
+				}
+			}//init
+			
+				private function sendMarker(marker:Object, circle:Object, file:String):int {
+					trace(file);
+					
+					var point:Waypoint = new Waypoint(marker, circle, file);
+				
+					waypoints.push(point);
+					if (point.sound == null) {
+						waypointData.addItem( { Label:point.marker.getTitle(), Proximity:point.circle.getRadius(), Audio:"" } );
+						if (file != "No File") {
+							return 1;
+						}
+					}
+					else {
+						waypointData.addItem( { Label:point.marker.getTitle(), Proximity:point.circle.getRadius(), Audio:point.sound.name } );
+					}
+					return 0;
+				}
+				
+				private function clearAllWaypoints():void {
+					for (var i:int = 0; i < waypoints.length; i++) {
+						waypoints[i].marker.setMap(null);
+						waypoints[i].circle.setMap(null);
+					}
+					waypointData.removeAll();
+					waypoints = new Array();
+				}
+				
+				private function removeMarker(remMarker:Object):void {
+					for (var i:int = 0; i < waypoints.length; i++) {
+						trace("Testing marker: ", i);
+						if (waypoints[i].marker == remMarker) {
+							waypoints[i].marker.setMap(null);
+							waypoints[i].circle.setMap(null);
+							waypoints.splice(i, 1);
+							break;
+						}
+					}
+					refreshList();
+				}
+				
+				private function refreshList():void{
+					waypointData.removeAll();
+				
+					for (var i:int = 0; i < waypoints.length; i++) {
+						if (waypoints[i].sound == null) {
+							waypointData.addItem( { Label:waypoints[i].marker.getTitle(), Proximity:waypoints[i].circle.getRadius(), Audio:"" } );
+						}
+						else {
+							waypointData.addItem( { Label:waypoints[i].marker.getTitle(), Proximity:waypoints[i].circle.getRadius(), Audio:waypoints[i].sound.name } );
+						}
+					}
+					
+				}
+				
+				private function sendMap(map:Object):void {
+					activeMap = map;
+				}
+				
+			
+			/*
+			 * NON-SD SAVE FUNCTIONS:
+				 * Saves a file with a .wp extention; won't work w/ device, but
+				 * allows loading a route.
+			 * */
+			private function saveButton():void {
+				var file:File = File.documentsDirectory.resolvePath("Untitled.wp");
+				file.browseForSave("Save");
+				file.addEventListener(Event.SELECT, saveEvent);
+			}
+			private function saveEvent(event:Event):void {
+				var file:File = event.target as File;
+				saveToFile(file);
+			}
+			private function saveToFile(file:File):void{
+				
+				if (!file.extension || file.extension.toLowerCase() != "wp")
+				{
+					file.url += ".wp";
+				}
+				var filestream:FileStream = new FileStream();
+				filestream.open(file, FileMode.WRITE);
+				
+				var curLat:Number;
+				var curLng:Number;
+
+				for (var i:int = 0; i < waypoints.length; i++)
+				{
+					curLat = waypoints[i].marker.getPosition().lat();
+					curLng = waypoints[i].marker.getPosition().lng();
+					filestream.writeDouble(curLat);
+					filestream.writeDouble(curLng);
+					filestream.writeUTF(waypoints[i].marker.getTitle());
+					filestream.writeInt(waypoints[i].circle.getRadius());
+					if (waypoints[i].sound == null) {
+						filestream.writeUTF("No File");
+					}
+					else {
+						filestream.writeUTF(waypoints[i].sound.name);
+					}
+					
+				}
+				filestream.close();
+			}
+			
+			/* NON-SD LOAD FUNCTION:
+				 * Loads a .wp file, creating the waypoint list and placing them on
+				 * the map.
+			 * */
+			private function buttonTest2(eventObj:CloseEvent):void {
+				var file:File = File.documentsDirectory;
+				var filter:FileFilter = new FileFilter("Waypoint Files (.wp)", "*.wp");
+				file.browseForOpen("Open", [filter]);
+				file.addEventListener(Event.SELECT, openEvent);
+			}
+			private function openEvent(event:Event):void {
+				var file:File = event.target as File;
+				openFromFile(file);
+			}
+			
+			private function openFromFile(file:File):void {
+				
+				clearAllWaypoints(); //REMOVE WHEN CLEAR ALERT CREATED
+				var filestream:FileStream = new FileStream();
+				filestream.open(file, FileMode.READ);
+				
+				var flag:int;
+				var isLostFile:Boolean = false;
+				
+				var curLat:Number;
+				var curLng:Number;
+				var curTitle:String;
+				var curProx:Number;
+				var curFile:String;
+				
+				try{
+				while (filestream.bytesAvailable > 0) {
+					
+					curLat = filestream.readDouble();
+					curLng = filestream.readDouble();
+					curTitle = filestream.readUTF();
+					curProx = filestream.readInt();
+					curFile = filestream.readUTF();
+					
+					var latlng:Object = new html.window.google.maps.LatLng(curLat, curLng);
+					flag = test();
+					if (flag == 1) { isLostFile = true; }
+					//enclosed function needed to make event listeners stick to all markers rather than just last one
+					function test(){
+					var marker = new html.window.google.maps.Marker({
+						position: latlng,
+						map: activeMap,
+						title: curTitle,
+						draggable: true
+					});
+					var prox = new html.window.google.maps.Circle({
+						strokeColor: '#FF0000',
+						strokeOpacity: 0.8,
+						strokeWeight: 2,
+						fillColor: '#FF0000',
+						fillOpacity: 0.35,
+						center: marker.getPosition(),
+						radius: curProx,
+						map: activeMap,
+						clickable: false
+						});
+					html.window.google.maps.event.addListener(marker, "drag", function() {
+						prox.setCenter(marker.getPosition());});
+					html.window.google.maps.event.addListener(marker, "dblclick", function() {
+						removeMarker(marker); 
+						});
+						return(sendMarker(marker, prox, curFile));	
+					}
+				}
+				}
+				catch (error:Error){
+					Alert.show("Error loading Waypoints, aborting!", "Load Error!", Alert.OK);
+				}
+				filestream.close();
+				
+				if (isLostFile) {
+					Alert.show("One or more audio files could not be found and will need to be replaced", "Audio File(s) Missing", Alert.OK);
+				}
+			}
+			
+			/* CHANGE WAYPOINT NAME:
+				 * Changes the name of the selected waypoint (does not effect
+				 * function of device, for convienience only).
+			 * */
+			private function changeName():void {
+				var selectedIndex:int = myADG.selectedIndex;
+				if (selectedIndex == -1) { return; }
+				
+				waypointData.getItemAt(selectedIndex).Label = inputName.text;
+				waypointData.itemUpdated(waypointData.getItemAt(selectedIndex));
+				
+				waypoints[selectedIndex].marker.setTitle(inputName.text);
+				return;
+			}
+			
+			/* CHANGE PROX. RADIUS:
+				 * Changes the proximity radius for the selected waypoint.
+			 * */
+			private function changeProx():void {
+				var selectedIndex:int = myADG.selectedIndex;
+				if (selectedIndex == -1) { return; }
+				
+				waypointData.getItemAt(selectedIndex).Prox = inputProx.text;
+				waypointData.itemUpdated(waypointData.getItemAt(selectedIndex));
+				
+				waypoints[selectedIndex].circle.setRadius(Number(inputProx.text));
+				return;
+			}
+			
+			/* CENTER MAP:
+				 * Centers the map over a waypoint when it is clicked on the list.
+			 * */
+			private function centerMap(event:ListEvent):void {
+				activeMap.setCenter(waypoints[event.rowIndex].marker.getPosition());
+			}
+			
+			/* SELECT SOUND:
+				 * Select the .mp3 file to be played at the highlighted waypoint.
+			 * */
+			private function addSound():void {
+				var selectedIndex:int = myADG.selectedIndex;
+				if (selectedIndex == -1) { return; }
+				
+				var sound:File = File.documentsDirectory;
+				sound = sound.resolvePath("Automated_Tour_Guide/SD_CARD/VOICE");
+				var filter:FileFilter = new FileFilter(".mp3 Files", "*.mp3");
+				sound.browseForOpen("Select .mp3", [filter]);
+				sound.addEventListener(Event.SELECT, selectedSound);
+			}
+			private function selectedSound(event:Event):void {
+				var sound:File = event.target as File;
+				
+				var selectedIndex:int = myADG.selectedIndex;
+				waypointData.getItemAt(selectedIndex).Audio = sound.name;
+				waypointData.itemUpdated(waypointData.getItemAt(selectedIndex));
+				
+				waypoints[selectedIndex].sound = sound;
+			}
+			
+			/* Shift Order:
+				 * Modifies the order of the waypoints in the list
+			 * */
+			private function shiftOrder(direction:int):void {
+				var holder:Waypoint;
+				var index:int = myADG.selectedIndex;
+				if (!((index + direction) < 0) && !((index + direction) == waypoints.length))
+				{
+					trace(waypoints[index].marker.getTitle());
+					holder = waypoints[index];
+					waypoints[index] = waypoints[index + direction];
+					waypoints[index + direction] = holder;
+					refreshList();
+					myADG.selectedIndex = index + direction;
+				}
+			}
+			
+			/* SELECT SD CARD:
+				 * Has the user select the SD card for saving/loading routes.
+			 * */
+			private function selectSDButton():void {
+				var sd:File = new File();
+				sd.browseForDirectory("Select the SD card: Click Computer, then the SD card, then OK");
+				sd.addEventListener(Event.SELECT, selectSD)
+			}
+			private function selectSD(event:Event):void {
+				sdCardRoot = event.target as File;
+				saveSDButton.enabled = true;
+				loadSDButton.enabled = true;
+			}
+			/* SAVE SD CARD:
+				 * Saves the current route in the SD card format.
+				 * */
+			private function saveSD():void {
+				var filestream:FileStream = new FileStream();
+				var isNewRoute:Boolean = false;
+				
+				if (rNum == 0) {
+					var numRoutes:File = sdCardRoot.resolvePath("ROUTENUMBER.txt");
+					filestream.open(numRoutes, FileMode.READ);
+					rNum = int(filestream.readUTFBytes(filestream.bytesAvailable));
+					filestream.close();
+					rNum++;
+					isNewRoute = true;
+				}
+				
+				var rFolder:File = sdCardRoot.resolvePath("R" + rNum.toString());
+				trace(waypoints.length);
+				for (var i:int = 0; i < waypoints.length; i++) {
+					trace("Test");
+					var wFileTxt:File = rFolder.resolvePath("WP" + (i + 1).toString() + ".txt");
+					filestream.open(wFileTxt, FileMode.WRITE);
+					
+					var lat:Number = Number(waypoints[i].marker.getPosition().lat());
+					var lng:Number = (Number(waypoints[i].marker.getPosition().lng())) * -1;
+					
+					//modifying lat and lng
+					var Lat_HR:Number = Math.floor(lat);
+					var Lng_HR:Number = Math.floor(lng);
+					
+					var Lat_Minutes = (lat - Lat_HR) * 60;
+					var Lng_Minutes = (lng - Lng_HR) * 60;
+					
+					var outLat = (Lat_HR * 100) + Lat_Minutes;
+					var outLng = (Lng_HR * 100) + Lng_Minutes;
+					
+					outLat = int(outLat * 1000000) / 1000000;
+					outLng = int(outLng * 1000000) / 1000000;
+					
+					filestream.writeUTFBytes(outLat.toString());
+					filestream.writeUTFBytes(",");
+					filestream.writeUTFBytes(outLng.toString());
+					filestream.writeUTFBytes(",");
+					filestream.writeUTFBytes(Number(waypoints[i].circle.getRadius()).toString());
+					filestream.close();
+					
+					if (waypoints[i].sound != null)
+					{
+						var soundDest:File = rFolder.resolvePath("WP" + (i + 1).toString() + ".mp3");
+						waypoints[i].sound.copyTo(soundDest, true);
+					}
+				}
+				
+				var wFileNum:File = rFolder.resolvePath("WAYPOINTNUMBER.txt");
+				filestream.open(wFileNum, FileMode.WRITE);
+				filestream.writeUTFBytes(Number(waypoints.length).toString());
+				
+				var rWPFile:File = rFolder.resolvePath("R" + rNum.toString() + ".wp");
+				saveToFile(rWPFile);
+				
+				if (isNewRoute){
+					filestream.open(numRoutes, FileMode.WRITE);
+					filestream.writeUTFBytes(rNum.toString());
+					filestream.close();
+				}
+			}
+			
+			
+			private function selectLoadSD():void {
+				sdCardRoot.browseForDirectory("Message");
+				sdCardRoot.addEventListener(Event.SELECT, loadSD);
+			}
+			private function loadSD(event:Event):void {
+				var rNumFolder:File = event.target as File;
+				var saveFile:File = rNumFolder.resolvePath(rNumFolder.name + ".wp");
+				openFromFile(saveFile);
+			}
+			
+			
+			[Bindable]
+			private var waypointData:ArrayCollection = new ArrayCollection([]);
+			
+			
+        ]]>
+    </mx:Script>
+	
+	<mx:Panel id = "panel"
+        height="100%" width="100%" layout="horizontal">
+		
+		<mx:UIComponent id="container" percentWidth="100" height="100%"/>
+		
+		<mx:Panel title="Options"
+		height="100%" layout="vertical" verticalAlign="middle" horizontalAlign="center" verticalGap="10">
+			<mx:Button label="Save Test" click="saveButton()"></mx:Button>
+			<mx:Button label="Load Test" click='Alert.show("This will remove all current waypoints! Continue?", "Alert!", Alert.YES | Alert.NO, null, buttonTest2, null, Alert.YES)'></mx:Button>
+			
+			<mx:Panel title="Label"
+			layout="vertical" verticalAlign="middle" horizontalAlign="center" verticalGap="10">
+				<mx:Button label="Name Waypoint" click="changeName()"></mx:Button>
+				<mx:TextArea id="inputName"></mx:TextArea>
+			</mx:Panel>
+			
+			<mx:Panel title="Proximity"
+			layout="vertical" verticalAlign="middle" horizontalAlign="center" verticalGap="10">
+				<mx:Button label="Edit Proxmity" click="changeProx()"></mx:Button>
+				<mx:TextArea id="inputProx"></mx:TextArea>
+			</mx:Panel>
+			
+			<mx:Button label="Add Sound" click="addSound()"></mx:Button>
+
+			<mx:Button label="Select SD Card" click="selectSDButton()"></mx:Button>
+			
+			<mx:Button id="saveSDButton" label="SD Save Test" click="saveSD()" enabled="false"></mx:Button>
+			
+			<mx:Button id="loadSDButton" label="SD Load Test" click="selectLoadSD()" enabled="false"></mx:Button>
+			
+			<mx:Button label="Remove All" click="clearAllWaypoints()"></mx:Button>
+			
+			<mx:Button label="Move Up" click="shiftOrder(-1)"></mx:Button>
+			
+			<mx:Button label="Move Down" click="shiftOrder(1)"></mx:Button>
+		</mx:Panel>
+
+        <mx:AdvancedDataGrid id="myADG"
+            width="70%" height="100%"  sortableColumns = "false"
+            initialize="gc.refresh();">        
+            <mx:dataProvider>
+                <mx:GroupingCollection2 id="gc" source="{waypointData}">
+                </mx:GroupingCollection2>
+            </mx:dataProvider>        
+            
+            <mx:columns>
+                <mx:AdvancedDataGridColumn dataField="Label"/>
+                <mx:AdvancedDataGridColumn dataField="Proximity"/>
+                <mx:AdvancedDataGridColumn dataField="Audio"/>
+            </mx:columns>
+       </mx:AdvancedDataGrid>
+    </mx:Panel>
+    
+</mx:WindowedApplication>
