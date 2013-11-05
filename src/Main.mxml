@@ -23,6 +23,7 @@
 			import flash.filesystem.*;
 			
 			private var waypoints:Array = new Array();
+			private var description:File;
 			private var html:HTMLLoader = new HTMLLoader();
 			private var activeMap:Object;
 			private var sdCardRoot:File;
@@ -324,6 +325,21 @@
 				waypoints[selectedIndex].sound = sound;
 			}
 			
+			/* SELECT DESCRIPTION:
+				 * Select the .mp3 file to be played during route selection process
+				 * */
+			private function selectDescription():void {
+				var sound:File = File.documentsDirectory;
+				sound = sound.resolvePath("Automated_Tour_Guide/SD_CARD/VOICE");
+				var filter:FileFilter = new FileFilter(".mp3 Files", "*.mp3");
+				sound.browseForOpen("Select .mp3", [filter]);
+				sound.addEventListener(Event.SELECT, selectedDescrip);
+			}
+			private function selectedDescrip(event:Event):void {
+				description = event.target as File;
+				descriptionName.text = description.name;
+			}
+			
 			/* Shift Order:
 				 * Modifies the order of the waypoints in the list
 			 * */
@@ -369,7 +385,8 @@
 					rNum++;
 					isNewRoute = true;
 				}
-				
+				var descripFile:File = sdCardRoot.resolvePath("R" + rNum.toString() + ".mp3");
+				description.copyTo(descripFile, true);
 				var rFolder:File = sdCardRoot.resolvePath("R" + rNum.toString());
 				trace(waypoints.length);
 				for (var i:int = 0; i < waypoints.length; i++) {
@@ -447,6 +464,12 @@
 		
 		<mx:Panel title="Options"
 		height="100%" layout="vertical" verticalAlign="middle" horizontalAlign="center" verticalGap="10">
+		
+			<mx:Panel title="Description"
+			layout="vertical" verticalAlign="middle" horizontalAlign="center" verticalGap="10">
+				<mx:Button label="Select Description .mp3" click="selectDescription()"></mx:Button>
+				<mx:TextArea id="descriptionName" editable="false"></mx:TextArea>
+			</mx:Panel>
 			<mx:Button label="Save Test" click="saveButton()"></mx:Button>
 			<mx:Button label="Load Test" click='Alert.show("This will remove all current waypoints! Continue?", "Alert!", Alert.YES | Alert.NO, null, buttonTest2, null, Alert.YES)'></mx:Button>
 			
