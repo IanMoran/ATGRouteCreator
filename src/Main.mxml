@@ -23,7 +23,7 @@
 			import flash.filesystem.*;
 			
 			private var waypoints:Array = new Array();
-			private var description:File;
+			private var description:File = null;
 			private var html:HTMLLoader = new HTMLLoader();
 			private var activeMap:Object;
 			private var sdCardRoot:File;
@@ -107,6 +107,9 @@
 					}
 					waypointData.removeAll();
 					waypoints = new Array();
+					rNum = 0;
+					description = null;
+					descriptionName.text = "";
 				}
 				
 				private function removeMarker(remMarker:Object):void {
@@ -330,7 +333,7 @@
 				 * */
 			private function selectDescription():void {
 				var sound:File = File.documentsDirectory;
-				sound = sound.resolvePath("Automated_Tour_Guide/SD_CARD/VOICE");
+				sound = sound.resolvePath("Automated_Tour_Guide/Audio Descriptions");
 				var filter:FileFilter = new FileFilter(".mp3 Files", "*.mp3");
 				sound.browseForOpen("Select .mp3", [filter]);
 				sound.addEventListener(Event.SELECT, selectedDescrip);
@@ -385,8 +388,11 @@
 					rNum++;
 					isNewRoute = true;
 				}
-				var descripFile:File = sdCardRoot.resolvePath("R" + rNum.toString() + ".mp3");
-				description.copyTo(descripFile, true);
+				if (description != null)
+				{
+					var descripFile:File = sdCardRoot.resolvePath("R" + rNum.toString() + ".mp3");
+					description.copyTo(descripFile, true);
+				}
 				var rFolder:File = sdCardRoot.resolvePath("R" + rNum.toString());
 				trace(waypoints.length);
 				for (var i:int = 0; i < waypoints.length; i++) {
@@ -440,13 +446,16 @@
 			
 			
 			private function selectLoadSD():void {
-				sdCardRoot.browseForDirectory("Message");
-				sdCardRoot.addEventListener(Event.SELECT, loadSD);
+				var folderSelecter:File = new File(sdCardRoot.nativePath);
+				folderSelecter.browseForDirectory("Message");
+				folderSelecter.addEventListener(Event.SELECT, loadSD);
 			}
 			private function loadSD(event:Event):void {
 				var rNumFolder:File = event.target as File;
 				var saveFile:File = rNumFolder.resolvePath(rNumFolder.name + ".wp");
 				openFromFile(saveFile);
+				rNum = parseInt(rNumFolder.name.charAt(1));
+				
 			}
 			
 			
@@ -465,39 +474,41 @@
 		<mx:Panel title="Options"
 		height="100%" layout="vertical" verticalAlign="middle" horizontalAlign="center" verticalGap="10">
 		
-			<mx:Panel title="Description"
+			<mx:Panel title="Route Description"
 			layout="vertical" verticalAlign="middle" horizontalAlign="center" verticalGap="10">
 				<mx:Button label="Select Description .mp3" click="selectDescription()"></mx:Button>
 				<mx:TextArea id="descriptionName" editable="false"></mx:TextArea>
 			</mx:Panel>
-			<mx:Button label="Save Test" click="saveButton()"></mx:Button>
+			<!--<mx:Button label="Save Test" click="saveButton()"></mx:Button>
 			<mx:Button label="Load Test" click='Alert.show("This will remove all current waypoints! Continue?", "Alert!", Alert.YES | Alert.NO, null, buttonTest2, null, Alert.YES)'></mx:Button>
-			
-			<mx:Panel title="Label"
+			-->
+			<mx:Panel title="Waypoint Label"
 			layout="vertical" verticalAlign="middle" horizontalAlign="center" verticalGap="10">
 				<mx:Button label="Name Waypoint" click="changeName()"></mx:Button>
 				<mx:TextArea id="inputName"></mx:TextArea>
 			</mx:Panel>
 			
-			<mx:Panel title="Proximity"
+			<mx:Panel title="Waypoint Proximity"
 			layout="vertical" verticalAlign="middle" horizontalAlign="center" verticalGap="10">
 				<mx:Button label="Edit Proxmity" click="changeProx()"></mx:Button>
 				<mx:TextArea id="inputProx"></mx:TextArea>
 			</mx:Panel>
 			
-			<mx:Button label="Add Sound" click="addSound()"></mx:Button>
-
-			<mx:Button label="Select SD Card" click="selectSDButton()"></mx:Button>
-			
-			<mx:Button id="saveSDButton" label="SD Save Test" click="saveSD()" enabled="false"></mx:Button>
-			
-			<mx:Button id="loadSDButton" label="SD Load Test" click="selectLoadSD()" enabled="false"></mx:Button>
-			
-			<mx:Button label="Remove All" click="clearAllWaypoints()"></mx:Button>
+			<mx:Button label="Add Waypoint Audio" click="addSound()"></mx:Button>
 			
 			<mx:Button label="Move Up" click="shiftOrder(-1)"></mx:Button>
 			
 			<mx:Button label="Move Down" click="shiftOrder(1)"></mx:Button>
+			
+			<mx:Button label="Select SD Card" click="selectSDButton()"></mx:Button>
+			
+			<mx:Button id="saveSDButton" label="Save to SD" click="saveSD()" enabled="false"></mx:Button>
+			
+			<mx:Button id="loadSDButton" label="Load from SD" click="selectLoadSD()" enabled="false"></mx:Button>
+			
+			<mx:Button label="Remove All/New Route" click="clearAllWaypoints()"></mx:Button>
+			
+
 		</mx:Panel>
 
         <mx:AdvancedDataGrid id="myADG"
