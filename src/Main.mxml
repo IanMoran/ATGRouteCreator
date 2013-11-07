@@ -309,7 +309,7 @@
 				if (selectedIndex == -1) { return; }
 				
 				var sound:File = File.documentsDirectory;
-				sound = sound.resolvePath("Automated_Tour_Guide/SD_CARD/VOICE");
+				sound = sound.resolvePath("Automated_Tour_Guide/Waypoint Descriptions");
 				var filter:FileFilter = new FileFilter(".mp3 Files", "*.mp3");
 				sound.browseForOpen("Select .mp3", [filter]);
 				sound.addEventListener(Event.SELECT, selectedSound);
