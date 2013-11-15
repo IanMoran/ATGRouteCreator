@@ -391,7 +391,10 @@
 				if (description != null)
 				{
 					var descripFile:File = sdCardRoot.resolvePath("R" + rNum.toString() + ".mp3");
-					description.copyTo(descripFile, true);
+					trace(descripFile.name);
+					var tempFile:File = File.documentsDirectory.resolvePath("Test.mp3");
+					description.copyTo(tempFile, true);
+					tempFile.moveTo(descripFile, true);
 				}
 				var rFolder:File = sdCardRoot.resolvePath("R" + rNum.toString());
 				trace(waypoints.length);
@@ -399,6 +402,9 @@
 					trace("Test");
 					var wFileTxt:File = rFolder.resolvePath("WP" + (i + 1).toString() + ".txt");
 					filestream.open(wFileTxt, FileMode.WRITE);
+					
+					trace(waypoints[i].marker.getPosition().lat());
+					trace(waypoints[i].marker.getPosition().lng());
 					
 					var lat:Number = Number(waypoints[i].marker.getPosition().lat());
 					var lng:Number = (Number(waypoints[i].marker.getPosition().lng())) * -1;
@@ -410,11 +416,20 @@
 					var Lat_Minutes = (lat - Lat_HR) * 60;
 					var Lng_Minutes = (lng - Lng_HR) * 60;
 					
-					var outLat = (Lat_HR * 100) + Lat_Minutes;
-					var outLng = (Lng_HR * 100) + Lng_Minutes;
+					trace(Lat_Minutes);
+					trace(Lng_Minutes);
 					
-					outLat = int(outLat * 1000000) / 1000000;
-					outLng = int(outLng * 1000000) / 1000000;
+					var outLat:Number = (Lat_HR * 100) + Lat_Minutes;
+					var outLng:Number = (Lng_HR * 100) + Lng_Minutes;
+					
+					trace(outLat);
+					trace(outLng);
+					
+					outLat = Number(outLat.toFixed(6));
+					outLng = Number(outLng.toFixed(6));
+					
+					trace(outLat);
+					trace(outLng);
 					
 					filestream.writeUTFBytes(outLat.toString());
 					filestream.writeUTFBytes(",");
@@ -426,7 +441,10 @@
 					if (waypoints[i].sound != null)
 					{
 						var soundDest:File = rFolder.resolvePath("WP" + (i + 1).toString() + ".mp3");
-						waypoints[i].sound.copyTo(soundDest, true);
+						var tempFile:File = File.documentsDirectory.resolvePath("Tempfile.mp3");
+						trace(soundDest.name);
+						waypoints[i].sound.copyTo(tempFile, true);
+						tempFile.moveTo(soundDest, true);
 					}
 				}
 				
@@ -455,7 +473,9 @@
 				var saveFile:File = rNumFolder.resolvePath(rNumFolder.name + ".wp");
 				openFromFile(saveFile);
 				rNum = parseInt(rNumFolder.name.charAt(1));
-				
+				description = sdCardRoot.resolvePath(rNumFolder.name + ".mp3");
+				if (description.exists) descriptionName.text = description.name;
+				else description = null;
 			}
 			
 			

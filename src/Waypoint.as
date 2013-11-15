@@ -18,7 +18,7 @@ package
 			try{
 				if (file != "No File") {
 					sound = File.documentsDirectory;
-					sound = sound.resolvePath("Automated_Tour_Guide/SD_CARD/VOICE/" + file);
+					sound = sound.resolvePath("Automated_Tour_Guide/Waypoint Descriptions/" + file);
 					if (!sound.exists) {
 						sound = null;
 					}
