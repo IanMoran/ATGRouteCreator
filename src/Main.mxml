@@ -291,7 +291,7 @@
 				var selectedIndex:int = myADG.selectedIndex;
 				if (selectedIndex == -1) { return; }
 				
-				waypointData.getItemAt(selectedIndex).Prox = inputProx.text;
+				waypointData.getItemAt(selectedIndex).Proximity = inputProx.text;
 				waypointData.itemUpdated(waypointData.getItemAt(selectedIndex));
 				
 				waypoints[selectedIndex].circle.setRadius(Number(inputProx.text));
