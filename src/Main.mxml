@@ -325,7 +325,9 @@
 				waypointData.getItemAt(selectedIndex).Audio = sound.name;
 				waypointData.itemUpdated(waypointData.getItemAt(selectedIndex));
 				
-				waypoints[selectedIndex].sound = sound;
+				var soundDest:File = File.documentsDirectory.resolvePath("Automated_Tour_Guide/Audio Descriptions/" + routeName.text + "/" +sound.name);
+				sound.copyTo(soundDest, true);
+				waypoints[selectedIndex].sound = soundDest;
 			}
 			
 			/* SELECT DESCRIPTION:
@@ -377,6 +379,8 @@
 				 * Saves the current route in the SD card format.
 				 * */
 			private function saveSD():void {
+				if (waypoints.length == 0) return; //ADD NOTIFICATION WINDOW SAYING FAIL SAVE DUE TO NO POINTS
+				
 				var filestream:FileStream = new FileStream();
 				var isNewRoute:Boolean = false;
 				
@@ -494,8 +498,13 @@
 		<mx:Panel title="Options"
 		height="100%" layout="vertical" verticalAlign="middle" horizontalAlign="center" verticalGap="10">
 		
+			<mx:Panel title="Route Name !!SET FIRST AND DO NOT CHANGE!!"
+				layout="vertical" verticalAlign="middle" horizontalAlign="center" verticalGap="10">
+				<mx:Button label="Set Route Name" click="null"></mx:Button>
+				<mx:TextArea id="routeName" editable="true"></mx:TextArea>
+			</mx:Panel>
 			<mx:Panel title="Route Description"
-			layout="vertical" verticalAlign="middle" horizontalAlign="center" verticalGap="10">
+				layout="vertical" verticalAlign="middle" horizontalAlign="center" verticalGap="10">
 				<mx:Button label="Select Description .mp3" click="selectDescription()"></mx:Button>
 				<mx:TextArea id="descriptionName" editable="false"></mx:TextArea>
 			</mx:Panel>

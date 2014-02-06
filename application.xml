@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <application xmlns="http://ns.adobe.com/air/application/3.5">
   <id>ATGRouteCreator</id>
-  <versionNumber>1.0.3</versionNumber>
+  <versionNumber>1.0.4</versionNumber>
   <filename>ATG Route Creator</filename>
   <name>ATG Route Creator</name>
   <initialWindow>
