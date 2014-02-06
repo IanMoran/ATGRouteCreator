@@ -182,7 +182,7 @@
 						filestream.writeUTF("No File");
 					}
 					else {
-						filestream.writeUTF(waypoints[i].sound.name);
+						filestream.writeUTF(routeName.text + "/" + waypoints[i].sound.name);
 					}
 					
 				}
@@ -341,8 +341,12 @@
 				sound.addEventListener(Event.SELECT, selectedDescrip);
 			}
 			private function selectedDescrip(event:Event):void {
-				description = event.target as File;
-				descriptionName.text = description.name;
+				
+				var descripRaw = event.target as File;
+				var descripDest:File = File.documentsDirectory.resolvePath("Automated_Tour_Guide/Audio Descriptions/" + routeName.text + "/" +descripRaw.name);
+				descripRaw.copyTo(descripDest, true);
+				description = descripDest;
+				descriptionName.text = descripDest.name;
 			}
 			
 			/* Shift Order:
