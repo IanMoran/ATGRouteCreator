@@ -10,15 +10,16 @@ package
 		
 		public var marker:Object;
 		public var circle:Object;
-		public var sound:File = null;	
+		public var sound:File = null;
+		public var soundName:String = null;
 
-		public function Waypoint(inMarker:Object, inCircle:Object, file:String):void{
+		public function Waypoint(inMarker:Object, inCircle:Object, soundNameIn:String, soundIn:File):void {
 			marker = inMarker;
 			circle = inCircle;
 			try{
-				if (file != "No File") {
-					sound = File.documentsDirectory;
-					sound = sound.resolvePath("Automated_Tour_Guide/Audio Descriptions/" + file);
+				if (soundNameIn != "No File") {
+					sound = soundIn;
+					soundName = soundNameIn;
 					if (!sound.exists) {
 						sound = null;
 					}
@@ -32,6 +33,7 @@ package
 
 		public function editSound(filepath:File):void{
 			sound = filepath;
+			soundName = filepath.name;
 		}
 		
 	}

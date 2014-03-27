@@ -77,25 +77,25 @@
 					html.window.google.maps.event.addListener(marker, "dblclick", function() {
 						removeMarker(marker); 
 						});
-					sendMarker(marker, prox, "No File");
+					sendMarker(marker, prox, null, "No File");
 				});
 				}
 			}//init
 			
-				private function sendMarker(marker:Object, circle:Object, file:String):int {
-					trace(file);
+				private function sendMarker(marker:Object, circle:Object, sound:File, soundName:String):int {
+					trace(soundName);
 					
-					var point:Waypoint = new Waypoint(marker, circle, file);
-				
+					var point:Waypoint = new Waypoint(marker, circle, soundName, sound);
+
 					waypoints.push(point);
 					if (point.sound == null) {
 						waypointData.addItem( { Label:point.marker.getTitle(), Proximity:point.circle.getRadius(), Audio:"" } );
-						if (file != "No File") {
+						if (soundName != "No File") {
 							return 1;
 						}
 					}
 					else {
-						waypointData.addItem( { Label:point.marker.getTitle(), Proximity:point.circle.getRadius(), Audio:point.sound.name } );
+						waypointData.addItem( { Label:point.marker.getTitle(), Proximity:point.circle.getRadius(), Audio:point.soundName } );
 					}
 					return 0;
 				}
@@ -133,7 +133,7 @@
 							waypointData.addItem( { Label:waypoints[i].marker.getTitle(), Proximity:waypoints[i].circle.getRadius(), Audio:"" } );
 						}
 						else {
-							waypointData.addItem( { Label:waypoints[i].marker.getTitle(), Proximity:waypoints[i].circle.getRadius(), Audio:waypoints[i].sound.name } );
+							waypointData.addItem( { Label:waypoints[i].marker.getTitle(), Proximity:waypoints[i].circle.getRadius(), Audio:waypoints[i].soundName } );
 						}
 					}
 					
@@ -182,7 +182,7 @@
 						filestream.writeUTF("No File");
 					}
 					else {
-						filestream.writeUTF(routeName.text + "/" + waypoints[i].sound.name);
+						filestream.writeUTF(waypoints[i].soundName);
 					}
 					
 				}
@@ -192,6 +192,8 @@
 			/* NON-SD LOAD FUNCTION:
 				 * Loads a .wp file, creating the waypoint list and placing them on
 				 * the map.
+				 * 
+				 * buttonTest2 and openEvent are Depreciated.
 			 * */
 			private function buttonTest2(eventObj:CloseEvent):void {
 				var file:File = File.documentsDirectory;
@@ -201,10 +203,10 @@
 			}
 			private function openEvent(event:Event):void {
 				var file:File = event.target as File;
-				openFromFile(file);
+				openFromFile(file, null);
 			}
 			
-			private function openFromFile(file:File):void {
+			private function openFromFile(file:File, folder:File):void {
 				
 				clearAllWaypoints(); //REMOVE WHEN CLEAR ALERT CREATED
 				var filestream:FileStream = new FileStream();
@@ -218,15 +220,21 @@
 				var curTitle:String;
 				var curProx:Number;
 				var curFile:String;
+				var curSound:File;
 				
+				var i:int = 0;
 				try{
 				while (filestream.bytesAvailable > 0) {
-					
+					i++;
 					curLat = filestream.readDouble();
 					curLng = filestream.readDouble();
 					curTitle = filestream.readUTF();
 					curProx = filestream.readInt();
 					curFile = filestream.readUTF();
+					if (curFile != "No File")
+					{
+						curSound = folder.resolvePath("WP" + i + ".mp3");
+					}
 					
 					var latlng:Object = new html.window.google.maps.LatLng(curLat, curLng);
 					flag = test();
@@ -255,7 +263,7 @@
 					html.window.google.maps.event.addListener(marker, "dblclick", function() {
 						removeMarker(marker); 
 						});
-						return(sendMarker(marker, prox, curFile));	
+						return(sendMarker(marker, prox, curSound, curFile));	
 					}
 				}
 				}
@@ -325,9 +333,9 @@
 				waypointData.getItemAt(selectedIndex).Audio = sound.name;
 				waypointData.itemUpdated(waypointData.getItemAt(selectedIndex));
 				
-				var soundDest:File = File.documentsDirectory.resolvePath("Automated_Tour_Guide/Audio Descriptions/" + routeName.text + "/" +sound.name);
-				sound.copyTo(soundDest, true);
-				waypoints[selectedIndex].sound = soundDest;
+				//var soundDest:File = File.documentsDirectory.resolvePath("Automated_Tour_Guide/Audio Descriptions/" + routeName.text + "/" +sound.name);
+				//sound.copyTo(soundDest, true);
+				waypoints[selectedIndex].editSound(sound);
 			}
 			
 			/* SELECT DESCRIPTION:
@@ -479,7 +487,7 @@
 			private function loadSD(event:Event):void {
 				var rNumFolder:File = event.target as File;
 				var saveFile:File = rNumFolder.resolvePath(rNumFolder.name + ".wp");
-				openFromFile(saveFile);
+				openFromFile(saveFile,rNumFolder);
 				rNum = parseInt(rNumFolder.name.charAt(1));
 				description = sdCardRoot.resolvePath(rNumFolder.name + ".mp3");
 				if (description.exists) descriptionName.text = description.name;
