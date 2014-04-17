@@ -24,6 +24,7 @@
 			
 			private var waypoints:Array = new Array();
 			private var description:File = null;
+			private var descriptionShort:File = null;
 			private var html:HTMLLoader = new HTMLLoader();
 			private var activeMap:Object;
 			private var sdCardRoot:File;
@@ -351,10 +352,26 @@
 			private function selectedDescrip(event:Event):void {
 				
 				var descripRaw = event.target as File;
-				var descripDest:File = File.documentsDirectory.resolvePath("Automated_Tour_Guide/Audio Descriptions/" + routeName.text + "/" +descripRaw.name);
-				descripRaw.copyTo(descripDest, true);
-				description = descripDest;
-				descriptionName.text = descripDest.name;
+				//var descripDest:File = File.documentsDirectory.resolvePath("Automated_Tour_Guide/Audio Descriptions/" + "TEST" + "/" +descripRaw.name);
+				//descripRaw.copyTo(descripDest, true);
+				description = descripRaw;
+				descriptionName.text = descripRaw.name;
+			}
+			
+			private function selectShortDescription():void {
+				var sound:File = File.documentsDirectory;
+				sound = sound.resolvePath("Automated_Tour_Guide/Audio Descriptions");
+				var filter:FileFilter = new FileFilter(".mp3 Files", "*.mp3");
+				sound.browseForOpen("Select .mp3", [filter]);
+				sound.addEventListener(Event.SELECT, selectedShortDescrip);
+			}
+			private function selectedShortDescrip(event:Event):void {
+				
+				var descripRaw = event.target as File;
+				//var descripDest:File = File.documentsDirectory.resolvePath("Automated_Tour_Guide/Audio Descriptions/" + "TEST" + "/" +descripRaw.name);
+				//descripRaw.copyTo(descripDest, true);
+				descriptionShort = descripRaw;
+				descriptionShortName.text = descripRaw.name;
 			}
 			
 			/* Shift Order:
@@ -404,15 +421,24 @@
 					rNum++;
 					isNewRoute = true;
 				}
+				
+				var rFolder:File = sdCardRoot.resolvePath("R" + rNum.toString());
+				
 				if (description != null)
 				{
-					var descripFile:File = sdCardRoot.resolvePath("R" + rNum.toString() + ".mp3");
+					var descripFile:File = rFolder.resolvePath("R" + rNum.toString() + ".mp3");
 					//trace(descripFile.name);
 					//var tempFile:File = File.documentsDirectory.resolvePath("Test.mp3");
 					//description.copyTo(tempFile, true);
 					description.copyTo(descripFile, true);
 				}
-				var rFolder:File = sdCardRoot.resolvePath("R" + rNum.toString());
+				if (descriptionShort != null)
+				{
+					var descripShortFile:File = sdCardRoot.resolvePath("R" + rNum.toString + "_description.mp3");
+					descriptionShort.copyTo(descripShortFile, true);
+				}
+				
+
 				trace(waypoints.length);
 				for (var i:int = 0; i < waypoints.length; i++) {
 					trace("Test");
@@ -489,9 +515,12 @@
 				var saveFile:File = rNumFolder.resolvePath(rNumFolder.name + ".wp");
 				openFromFile(saveFile,rNumFolder);
 				rNum = parseInt(rNumFolder.name.charAt(1));
-				description = sdCardRoot.resolvePath(rNumFolder.name + ".mp3");
+				description = rNumFolder.resolvePath(rNumFolder.name + ".mp3");
+				descriptionShort = sdCardRoot.resolvePath(rNumFolder.name + "_description.mp3");
 				if (description.exists) descriptionName.text = description.name;
 				else description = null;
+				if (descriptionShort.exists) descriptionShortName.text = descriptionShort.name;
+				else descriptionShort = null;
 			}
 			
 			
@@ -505,67 +534,73 @@
 	<mx:Panel id = "panel"
         height="100%" width="100%" layout="horizontal">
 		
-		<mx:UIComponent id="container" percentWidth="100" height="100%"/>
-		
-		<mx:Panel title="Options"
-		height="100%" layout="vertical" verticalAlign="middle" horizontalAlign="center" verticalGap="10">
-		
-			<mx:Panel title="Route Name !!SET FIRST AND DO NOT CHANGE!!"
+		<mx:Panel title="Map"
+		height="100%" width="100%" layout="vertical">
+		<mx:UIComponent id="container" percentWidth="100" height="70%"/>
+		<mx:Panel title="File options"
+		height="30%" width="100%" layout="horizontal" horizontalAlign="center" verticalAlign="middle">
+			<mx:Panel title="Route Description - Short"
 				layout="vertical" verticalAlign="middle" horizontalAlign="center" verticalGap="10">
-				<mx:Button label="Set Route Name" click="null"></mx:Button>
-				<mx:TextArea id="routeName" editable="true"></mx:TextArea>
-			</mx:Panel>
-			<mx:Panel title="Route Description"
+				<mx:Button label="Select Description .mp3" click="selectShortDescription()"></mx:Button>
+				<mx:TextArea id="descriptionShortName" editable="false"></mx:TextArea>
+			</mx:Panel>	
+		
+			<mx:Panel title="Route Description - Long"
 				layout="vertical" verticalAlign="middle" horizontalAlign="center" verticalGap="10">
 				<mx:Button label="Select Description .mp3" click="selectDescription()"></mx:Button>
 				<mx:TextArea id="descriptionName" editable="false"></mx:TextArea>
-			</mx:Panel>
-			<!--<mx:Button label="Save Test" click="saveButton()"></mx:Button>
-			<mx:Button label="Load Test" click='Alert.show("This will remove all current waypoints! Continue?", "Alert!", Alert.YES | Alert.NO, null, buttonTest2, null, Alert.YES)'></mx:Button>
-			-->
-			<mx:Panel title="Waypoint Label"
-			layout="vertical" verticalAlign="middle" horizontalAlign="center" verticalGap="10">
-				<mx:Button label="Name Waypoint" click="changeName()"></mx:Button>
-				<mx:TextArea id="inputName"></mx:TextArea>
-			</mx:Panel>
+			</mx:Panel>	
 			
-			<mx:Panel title="Waypoint Proximity"
-			layout="vertical" verticalAlign="middle" horizontalAlign="center" verticalGap="10">
-				<mx:Button label="Edit Proxmity" click="changeProx()"></mx:Button>
-				<mx:TextArea id="inputProx"></mx:TextArea>
-			</mx:Panel>
-			
-			<mx:Button label="Add Waypoint Audio" click="addSound()"></mx:Button>
-			
-			<mx:Button label="Move Up" click="shiftOrder(-1)"></mx:Button>
-			
-			<mx:Button label="Move Down" click="shiftOrder(1)"></mx:Button>
-			
+			<mx:Panel title="Save/Load"
+			layout="vertical" horizontalAlign="center">
 			<mx:Button label="Select SD Card" click="selectSDButton()"></mx:Button>
 			
 			<mx:Button id="saveSDButton" label="Save to SD" click="saveSD()" enabled="false"></mx:Button>
 			
 			<mx:Button id="loadSDButton" label="Load from SD" click="selectLoadSD()" enabled="false"></mx:Button>
+			</mx:Panel>
 			
 			<mx:Button label="Remove All/New Route" click="clearAllWaypoints()"></mx:Button>
-			
-
+			</mx:Panel>
+		</mx:Panel>	
+		
+		<mx:Panel title="Waypoints"
+		height="100%" layout="vertical" verticalAlign="middle" horizontalAlign="center" verticalGap="0" width="40%">
+			<mx:AdvancedDataGrid id="myADG"
+				width="100%" height="70%"  sortableColumns = "false"
+				initialize="gc.refresh();">        
+				<mx:dataProvider>
+					<mx:GroupingCollection2 id="gc" source="{waypointData}">
+					</mx:GroupingCollection2>
+				</mx:dataProvider>        
+				
+				<mx:columns>
+					<mx:AdvancedDataGridColumn dataField="Label"/>
+					<mx:AdvancedDataGridColumn width="100" dataField="Proximity"/>
+					<mx:AdvancedDataGridColumn dataField="Audio"/>
+				</mx:columns>
+		   </mx:AdvancedDataGrid>
+		   <mx:Panel title="Waypoint Options"
+			height="30%" layout="horizontal" verticalAlign="middle" horizontalGap="10">
+				<mx:Panel title="Reorder" horizontalAlign="center">
+					<mx:Button label="Move Up" click="shiftOrder(-1)"></mx:Button>
+					<mx:Button label="Move Down" click="shiftOrder(1)"></mx:Button>
+				</mx:Panel>
+				<mx:Panel title="Waypoint Label"
+				layout="vertical" verticalAlign="middle" horizontalAlign="center" verticalGap="10">
+					<mx:Button label="Name Waypoint" click="changeName()"></mx:Button>
+					<mx:TextArea id="inputName"></mx:TextArea>
+				</mx:Panel>
+				
+				<mx:Panel title="Waypoint Proximity"
+				layout="vertical" verticalAlign="middle" horizontalAlign="center" verticalGap="10">
+					<mx:Button label="Edit Proxmity" click="changeProx()"></mx:Button>
+					<mx:TextArea id="inputProx"></mx:TextArea>
+				</mx:Panel>
+				
+				<mx:Button label="Add Waypoint Audio" click="addSound()"></mx:Button>
+			</mx:Panel>
 		</mx:Panel>
-
-        <mx:AdvancedDataGrid id="myADG"
-            width="70%" height="100%"  sortableColumns = "false"
-            initialize="gc.refresh();">        
-            <mx:dataProvider>
-                <mx:GroupingCollection2 id="gc" source="{waypointData}">
-                </mx:GroupingCollection2>
-            </mx:dataProvider>        
-            
-            <mx:columns>
-                <mx:AdvancedDataGridColumn dataField="Label"/>
-                <mx:AdvancedDataGridColumn dataField="Proximity"/>
-                <mx:AdvancedDataGridColumn dataField="Audio"/>
-            </mx:columns>
-       </mx:AdvancedDataGrid>
     </mx:Panel>
     
 </mx:WindowedApplication>
