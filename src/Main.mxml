@@ -403,6 +403,14 @@
 				sdCardRoot = event.target as File;
 				saveSDButton.enabled = true;
 				loadSDButton.enabled = true;
+				var numRoutes:File = sdCardRoot.resolvePath("ROUTENUMBER.txt");
+				if (numRoutes.exists == false)
+				{
+					var filestream:FileStream = new FileStream();
+					filestream.open(numRoutes, FileMode.WRITE);
+					filestream.writeUTFBytes("0");
+					filestream.close();
+				}
 			}
 			/* SAVE SD CARD:
 				 * Saves the current route in the SD card format.
