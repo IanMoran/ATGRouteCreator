@@ -27,7 +27,7 @@
 			private var descriptionShort:File = null;
 			private var html:HTMLLoader = new HTMLLoader();
 			private var activeMap:Object;
-			private var sdCardRoot:File;
+			private var sdCardRoot:File = File.documentsDirectory.resolvePath("ATG Route Creator");
 			private var rNum:int = 0;
 			
 			private function max():void {
@@ -421,20 +421,24 @@
 				var filestream:FileStream = new FileStream();
 				var isNewRoute:Boolean = false;
 				
-				if (rNum == 0) {
+				/*if (rNum == 0) {
 					var numRoutes:File = sdCardRoot.resolvePath("ROUTENUMBER.txt");
 					filestream.open(numRoutes, FileMode.READ);
 					rNum = int(filestream.readUTFBytes(filestream.bytesAvailable));
 					filestream.close();
 					rNum++;
 					isNewRoute = true;
-				}
+				}*/
 				
-				var rFolder:File = sdCardRoot.resolvePath("R" + rNum.toString());
+				var rFolder:File = sdCardRoot.resolvePath(fileName.text);
+				if (rFolder.exists)
+				{
+					//TODO: Confirmation dialogue to overwrite
+				}
 				
 				if (description != null)
 				{
-					var descripFile:File = rFolder.resolvePath("R" + rNum.toString() + ".mp3");
+					var descripFile:File = rFolder.resolvePath(fileName.text + ".mp3");
 					//trace(descripFile.name);
 					//var tempFile:File = File.documentsDirectory.resolvePath("Test.mp3");
 					//description.copyTo(tempFile, true);
@@ -442,7 +446,7 @@
 				}
 				if (descriptionShort != null)
 				{
-					var descripShortFile:File = sdCardRoot.resolvePath("R" + rNum.toString + "_description.mp3");
+					var descripShortFile:File = sdCardRoot.resolvePath(fileName.text + "_description.mp3");
 					descriptionShort.copyTo(descripShortFile, true);
 				}
 				
@@ -502,14 +506,14 @@
 				filestream.open(wFileNum, FileMode.WRITE);
 				filestream.writeUTFBytes(Number(waypoints.length).toString());
 				
-				var rWPFile:File = rFolder.resolvePath("R" + rNum.toString() + ".wp");
+				var rWPFile:File = rFolder.resolvePath(fileName.text + ".wp");
 				saveToFile(rWPFile);
 				
-				if (isNewRoute){
+				/*if (isNewRoute){
 					filestream.open(numRoutes, FileMode.WRITE);
 					filestream.writeUTFBytes(rNum.toString());
 					filestream.close();
-				}
+				}*/
 			}
 			
 			
@@ -559,14 +563,15 @@
 				<mx:TextArea id="descriptionName" editable="false"></mx:TextArea>
 			</mx:Panel>	
 			
-			<mx:Panel title="Save/Load"
+			<mx:Panel title="Route Name / Save"
 			layout="vertical" horizontalAlign="center">
-			<mx:Button label="Select SD Card" click="selectSDButton()"></mx:Button>
+			<!--<mx:Button label="Select SD Card" click="selectSDButton()"></mx:Button>-->
+			<mx:TextArea id="fileName" editable="True"></mx:TextArea>
 			
-			<mx:Button id="saveSDButton" label="Save to SD" click="saveSD()" enabled="false"></mx:Button>
-			
-			<mx:Button id="loadSDButton" label="Load from SD" click="selectLoadSD()" enabled="false"></mx:Button>
+			<mx:Button id="saveSDButton" label="Save" click="saveSD()" enabled="true"></mx:Button>
 			</mx:Panel>
+			<mx:Button id="loadSDButton" label="Load Route" click="selectLoadSD()" enabled="true"></mx:Button>
+			
 			
 			<mx:Button label="Remove All/New Route" click="clearAllWaypoints()"></mx:Button>
 			</mx:Panel>
